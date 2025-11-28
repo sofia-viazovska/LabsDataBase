@@ -39,16 +39,22 @@ model billableitem {
 }
 
 model movieshow {
-  movieid        Int            @id
-  title          String         @db.VarChar(200)
-  genre          String?        @db.VarChar(100)
-  releasedate    DateTime?      @db.Date
+  movieid        Int           @id
+  title          String        @db.VarChar(200)
+  category          String?       @db.VarChar(100)
+  releasedate    DateTime?     @db.Date
   duration       Int?
-  rating         String?        @db.VarChar(10)
-  billableitemid Int?           @unique
-  billableitem   billableitem?  @relation(fields: [billableitemid], references: [billableitemid], onDelete: NoAction, onUpdate: NoAction)
-  watchhistory   watchhistory[]
+  rating         String?       @db.VarChar(10)
+  billableitemid Int?          @unique
+  billableitem   billableitem? @relation(fields: [billableitemid], references: [billableitemid], onDelete: NoAction, onUpdate: NoAction)
+
+  watchhistory watchhistory[]
+
+  inCinema Boolean @default(true)
+
+  reviews Review[]    // ← ДОДАЙ ЦЕ ОБОВ’ЯЗКОВО
 }
+
 
 model profile {
   profileid       Int              @id
@@ -74,7 +80,6 @@ model profiletype {
   profile       profile[]
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model subscription {
   subscriptionid Int               @id
   type           subscription_type
@@ -113,3 +118,13 @@ enum transaction_type {
   Rental
   SubscriptionPayment
 }
+
+model Review {
+  id      Int     @id @default(autoincrement())
+  rating  Int
+  comment String?
+
+  movieId   Int?
+  movieshow movieshow? @relation(fields: [movieId], references: [movieid])
+}
+
