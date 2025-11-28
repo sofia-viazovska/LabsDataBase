@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Transaction {
+  transactionid   Int              @id
+  userid          Int?
+  billableitemid  Int?
+  transactiondate DateTime         @db.Timestamp(6)
+  amount          Decimal          @db.Decimal(10, 2)
+  type            transaction_type
+  billableitem    billableitem?    @relation(fields: [billableitemid], references: [billableitemid], onDelete: NoAction, onUpdate: NoAction)
+  User            User?            @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model User {
+  userid           Int           @id
+  name             String        @db.VarChar(100)
+  email            String        @unique @db.VarChar(100)
+  subscriptionid   Int?
+  paymentinfo      String?       @db.VarChar(255)
+  registrationdate DateTime      @db.Timestamp(6)
+  Transaction      Transaction[]
+  subscription     subscription? @relation(fields: [subscriptionid], references: [subscriptionid], onDelete: NoAction, onUpdate: NoAction)
+  profile          profile[]
+}
+
+model billableitem {
+  billableitemid Int           @id
+  Transaction    Transaction[]
+  movieshow      movieshow?
+  subscription   subscription?
+}
+
+model movieshow {
+  movieid        Int            @id
+  title          String         @db.VarChar(200)
+  genre          String?        @db.VarChar(100)
+  releasedate    DateTime?      @db.Date
+  duration       Int?
+  rating         String?        @db.VarChar(10)
+  billableitemid Int?           @unique
+  billableitem   billableitem?  @relation(fields: [billableitemid], references: [billableitemid], onDelete: NoAction, onUpdate: NoAction)
+  watchhistory   watchhistory[]
+}
+
+model profile {
+  profileid       Int              @id
+  userid          Int?
+  profilename     String           @db.VarChar(100)
+  profiletypeid   Int?
+  profiletype     profiletype?     @relation(fields: [profiletypeid], references: [profiletypeid], onDelete: NoAction, onUpdate: NoAction, map: "fk_profile_profiletype")
+  User            User?            @relation(fields: [userid], references: [userid], onDelete: NoAction, onUpdate: NoAction)
+  profilesettings profilesettings?
+  watchhistory    watchhistory[]
+}
+
+model profilesettings {
+  profileid        Int      @id
+  parentalcontrols Boolean?
+  maturityoverride String?  @db.VarChar(50)
+  profile          profile  @relation(fields: [profileid], references: [profileid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model profiletype {
+  profiletypeid Int       @id @default(autoincrement())
+  typename      String    @unique @db.VarChar(20)
+  profile       profile[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model subscription {
+  subscriptionid Int               @id
+  type           subscription_type
+  price          Decimal           @db.Decimal(10, 2)
+  maxscreens     Int
+  billableitemid Int?              @unique
+  User           User[]
+  billableitem   billableitem?     @relation(fields: [billableitemid], references: [billableitemid], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model watchhistory {
+  watchid   Int        @id
+  profileid Int?
+  movieid   Int?
+  watchdate DateTime   @db.Timestamp(6)
+  progress  Int?
+  movieshow movieshow? @relation(fields: [movieid], references: [movieid], onDelete: NoAction, onUpdate: NoAction)
+  profile   profile?   @relation(fields: [profileid], references: [profileid], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([profileid, movieid, watchdate])
+}
+
+enum age_category {
+  Kid
+  Adult
+}
+
+enum subscription_type {
+  Basic
+  Standard
+  Premium
+}
+
+enum transaction_type {
+  Purchase
+  Rental
+  SubscriptionPayment
+}
